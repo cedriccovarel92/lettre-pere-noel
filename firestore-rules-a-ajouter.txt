@@ -1,0 +1,6 @@
+À AJOUTER dans Firebase → projet jojo-cooker → Firestore Database → Règles,
+juste avant les deux dernières accolades fermantes, puis « Publier » :
+
+    match /noel/{document=**} {
+      allow read, write: if autorise();
+    }
