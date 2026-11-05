@@ -100,7 +100,7 @@ function model(){
     const app=await import(FB_AI+"firebase-app.js"),ai=await import(FB_AI+"firebase-ai.js");
     const a=app.getApps().find(x=>x.name==="ia")||app.initializeApp(window.FIREBASE_CONFIG,"ia");
     const inst=ai.getAI(a,{backend:new ai.GoogleAIBackend()});
-    return ai.getGenerativeModel(inst,{model:"gemini-2.5-flash",generationConfig:{responseMimeType:"application/json",temperature:.2}});
+    return ai.getGenerativeModel(inst,{model:"gemini-flash-lite-latest",generationConfig:{responseMimeType:"application/json",temperature:.2}});
   })().catch(e=>{modelP=null;throw e});
   return modelP;
 }
@@ -127,7 +127,7 @@ async function analyze(file,url){
         (slug?"Indice tiré du lien du produit : \""+slug+"\". ":"")+
         "1) Identifie le jouet ou cadeau principal. 2) Trouve la photo principale du produit (pas le texte, les prix, les boutons ni les bandeaux) et donne son cadre serré au format [ymin, xmin, ymax, xmax] normalisé de 0 à 1000. "+
         "Réponds en JSON : {\"name\": nom court en français, 2 à 6 mots, sans âge ni référence (marque seulement si courte et connue), \"emoji\": un seul emoji, \"box_2d\": [ymin, xmin, ymax, xmax] ou null}.";
-      const r=await m.generateContent([prompt,{inlineData:{mimeType:"image/jpeg",data:b64}}]);
+      const r=await Promise.race([m.generateContent([prompt,{inlineData:{mimeType:"image/jpeg",data:b64}}]),new Promise((_,ko)=>setTimeout(()=>ko(new Error("Gemini met trop de temps à répondre")),30000))]);
       let txt=r.response.text().trim().replace(/^```(json)?|```$/g,"");out=JSON.parse(txt);if(Array.isArray(out))out=out[0];
     }catch(e){console.warn("IA",e);lastAiErr=String(e&&e.message||e);if(!aiWarned){aiWarned=true;status("Reconnaissance automatique indisponible : "+(/config not found/i.test(lastAiErr)?"Gemini est en cours d'activation côté Firebase, réessaie dans quelques minutes.":/quota|429/i.test(lastAiErr)?"quota gratuit de Gemini atteint pour le moment.":lastAiErr.slice(0,140))+" La photo entière est utilisée.")}}
     let box=null;const b=out&&out.box_2d;
