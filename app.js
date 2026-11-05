@@ -115,7 +115,7 @@ function slugName(raw){
 function canvasOf(im,maxSide,box){const [sx,sy,sw,sh]=box||[0,0,im.width,im.height];const sc=Math.min(1,maxSide/Math.max(sw,sh));
   const c=document.createElement("canvas");c.width=Math.max(1,Math.round(sw*sc));c.height=Math.max(1,Math.round(sh*sc));
   const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,sx,sy,sw,sh,0,0,c.width,c.height);return c}
-let aiWarned=false;
+let aiWarned=false,lastAiErr="";
 async function analyze(file,url){
   const src=URL.createObjectURL(file);
   try{
@@ -129,7 +129,7 @@ async function analyze(file,url){
         "Réponds en JSON : {\"name\": nom court en français, 2 à 6 mots, sans âge ni référence (marque seulement si courte et connue), \"emoji\": un seul emoji, \"box_2d\": [ymin, xmin, ymax, xmax] ou null}.";
       const r=await m.generateContent([prompt,{inlineData:{mimeType:"image/jpeg",data:b64}}]);
       let txt=r.response.text().trim().replace(/^```(json)?|```$/g,"");out=JSON.parse(txt);if(Array.isArray(out))out=out[0];
-    }catch(e){console.warn("IA",e);if(!aiWarned){aiWarned=true;status("La reconnaissance automatique ne répond pas (Firebase AI Logic à activer ?). La photo entière est utilisée.")}}
+    }catch(e){console.warn("IA",e);lastAiErr=String(e&&e.message||e);if(!aiWarned){aiWarned=true;status("Reconnaissance automatique indisponible : "+(/config not found/i.test(lastAiErr)?"Gemini est en cours d'activation côté Firebase, réessaie dans quelques minutes.":/quota|429/i.test(lastAiErr)?"quota gratuit de Gemini atteint pour le moment.":lastAiErr.slice(0,140))+" La photo entière est utilisée.")}}
     let box=null;const b=out&&out.box_2d;
     if(Array.isArray(b)&&b.length===4&&b.every(v=>isFinite(+v))){
       let [y0,x0,y1,x1]=b.map(v=>+v/1000);const p=.012;
@@ -152,12 +152,12 @@ function enqueue(files){
   files.forEach((f,i)=>queue.push({f,url:i===0?url:""}));pump();
 }
 async function pump(){
-  if(busy)return;busy=true;let n=0;
+  if(busy)return;busy=true;let n=0;aiWarned=false;
   while(queue.length){const {f,url}=queue.shift();n++;
     status("✂︎ Les lutins découpent la capture "+n+(queue.length?" (encore "+queue.length+")":"")+"…");
     try{const res=await analyze(f,url),dup=dupOf(res.name);
       await saveToy(newId(),{name:res.name,emoji:res.emoji,url,img:res.img,r:rot(),by:firstName(store.user),byEmail:store.user.email,at:new Date().toISOString()});
-      status(dup?"« "+res.name+" » était déjà sur la lettre"+(dup.by?" (ajouté par "+dup.by+")":"")+" : retire un des deux si c'est un doublon.":res.ok?"« "+res.name+" » est collé dans la lettre ✓":"Photo collée. Touche l'étiquette pour écrire le nom du jouet.");
+      status(dup?"« "+res.name+" » était déjà sur la lettre"+(dup.by?" (ajouté par "+dup.by+")":"")+" : retire un des deux si c'est un doublon.":res.ok?"« "+res.name+" » est collé dans la lettre ✓":"Photo collée sans reconnaissance ("+(/config not found/i.test(lastAiErr)?"Gemini pas encore prêt côté Firebase":lastAiErr?lastAiErr.slice(0,120):"nom non trouvé")+"). Touche l'étiquette pour écrire le nom.");
     }catch(e){status("Cette image n'a pas pu être ajoutée.")}}
   busy=false;
 }
