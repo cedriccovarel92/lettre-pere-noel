@@ -97,8 +97,10 @@ $("#msg").addEventListener("paste",e=>{const tx=e.clipboardData&&e.clipboardData
 let modelP=null;
 function model(){
   if(!modelP)modelP=(async()=>{
-    const app=await import(FB_AI+"firebase-app.js"),ai=await import(FB_AI+"firebase-ai.js");
-    const a=app.getApps().find(x=>x.name==="ia")||app.initializeApp(window.FIREBASE_CONFIG,"ia");
+    const app=await import(FB_AI+"firebase-app.js"),ac=await import(FB_AI+"firebase-app-check.js"),ai=await import(FB_AI+"firebase-ai.js");
+    let a=app.getApps().find(x=>x.name==="ia");
+    if(!a){a=app.initializeApp(window.FIREBASE_CONFIG,"ia");
+      if(window.RECAPTCHA_KEY)ac.initializeAppCheck(a,{provider:new ac.ReCaptchaEnterpriseProvider(window.RECAPTCHA_KEY),isTokenAutoRefreshEnabled:true});}
     const inst=ai.getAI(a,{backend:new ai.GoogleAIBackend()});
     return ai.getGenerativeModel(inst,{model:"gemini-flash-lite-latest",generationConfig:{responseMimeType:"application/json",temperature:.2}});
   })().catch(e=>{modelP=null;throw e});

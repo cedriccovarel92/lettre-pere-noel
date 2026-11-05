@@ -13,3 +13,6 @@ window.ALLOWED_EMAILS = [
   "cedric.covarel.92@gmail.com",
   "aurelialaon@gmail.com"
 ];
+
+// Clé de site reCAPTCHA (publique) pour App Check, qui protège Gemini
+window.RECAPTCHA_KEY = "6LcPMxIuAAAAAFN57qellMN8wsOgnsfJ7yLzipn_";
