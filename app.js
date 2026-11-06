@@ -204,6 +204,26 @@ $("#pdfBtn").onclick=async()=>{const b=$("#pdfBtn");b.disabled=true;status("Mise
 $("#shareBtn").onclick=async()=>{const b=$("#shareBtn");b.disabled=true;status("Préparation de l'image…");
   try{const cv=await snapshot(),blob=await new Promise(r=>cv.toBlob(r,"image/png"));await shareOrDownload(blob,fileBase()+".png","image/png","Image prête ✓")}catch(e){status("L'image n'a pas pu être créée.")}
   b.disabled=false};
+/* ---------- Partage de la vidéo : une copie image de la lettre, lisible par lien ---------- */
+function randId(){const a=new Uint8Array(12);crypto.getRandomValues(a);return [...a].map(b=>b.toString(36).padStart(2,"0")).join("").slice(0,20)}
+$("#videoBtn").onclick=async()=>{
+  if(!store.db){status("Connecte-toi d'abord.");return}
+  const b=$("#videoBtn");b.disabled=true;status("Préparation de la vidéo…");
+  try{
+    const cv=await snapshot();
+    const W=900,sc=Math.min(1,W/cv.width),c=document.createElement("canvas");c.width=Math.round(cv.width*sc);c.height=Math.round(cv.height*sc);
+    const x=c.getContext("2d");x.fillStyle="#fffdf7";x.fillRect(0,0,c.width,c.height);x.drawImage(cv,0,0,c.width,c.height);
+    let q=.85,img=c.toDataURL("image/jpeg",q);while(img.length>900000&&q>.4){q-=.1;img=c.toDataURL("image/jpeg",q)}
+    let id=store.letter.shareId;
+    if(!id){id=randId();await store.db.doc(LETTRE).set({shareId:id},{merge:true});store.letter.shareId=id}
+    await store.db.doc("partage/"+id).set({img,w:c.width,h:c.height,signe:store.letter.signe||"",at:new Date().toISOString()});
+    const url=new URL("video.html?l="+id,location.href).href;
+    try{if(navigator.share){await navigator.share({title:"Une lettre pour le Père Noël",text:"Regarde la lettre de "+(store.letter.signe||"Johan")+" au Père Noël 🎅",url});status("Vidéo partagée ✓ Le lien montre la lettre telle qu'elle est maintenant.");b.disabled=false;return}}
+    catch(e){if(e&&e.name==="AbortError"){status("Partage annulé. Le lien est prêt : "+url);b.disabled=false;return}}
+    try{await navigator.clipboard.writeText(url);status("Lien copié ✓ "+url)}catch(e){status("Lien de la vidéo : "+url)}
+  }catch(e){console.error(e);status(/permission/i.test(String(e&&e.message))?"Partage refusé par Firebase : la règle « partage » n'est pas encore en place.":"La vidéo n'a pas pu être préparée.")}
+  b.disabled=false;
+};
 $("#copyBtn").onclick=async()=>{const L=store.letter,toys=store.toys.slice().sort((a,b)=>(a.at||"").localeCompare(b.at||""));
   const txt="🎅 Lettre au Père Noël"+(L.signe?" de "+L.signe:"")+(L.age?" ("+L.age+")":"")+"\n\n"+toys.map((t,i)=>(i+1)+". "+t.name+(t.url?"\n   "+t.url:"")).join("\n");
   try{if(navigator.share&&/iPhone|iPad|Android/.test(navigator.userAgent)){await navigator.share({text:txt});return}}catch(e){if(e&&e.name==="AbortError")return}

@@ -8,6 +8,7 @@ Site : https://cedriccovarel92.github.io/lettre-pere-noel/
 - Connexion Google, réservée aux deux adresses de `firebase-config.js`.
 - On ajoute un jouet en envoyant une **capture d'écran** de sa page produit : Gemini (Firebase AI Logic) lit le nom et recadre la photo du produit.
 - Export PDF, image à partager, liste avec les liens.
+- **Partager la vidéo de la lettre** : enregistre une copie image de la lettre dans `partage/{id}` et partage un lien vers `video.html?l={id}` (boule à neige, ombre chinoise, coup de vent, traîneau) qui finit sur la lettre avec un bouton pour la télécharger. Le lien reste le même ; chaque nouveau partage met la lettre à jour.
 
 ## Réglages Firebase (projet jojo-cooker, déjà utilisé par Jojo cooker)
 1. **Règles Firestore** : ajouter le bloc de `firestore-rules-a-ajouter.txt`, puis Publier.

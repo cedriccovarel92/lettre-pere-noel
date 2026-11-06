@@ -1,6 +1,11 @@
-À AJOUTER dans Firebase → projet jojo-cooker → Firestore Database → Règles,
-juste avant les deux dernières accolades fermantes, puis « Publier » :
+Règles à avoir dans Firebase → projet jojo-cooker → Firestore Database → Règles
+(avant les deux dernières accolades fermantes), puis « Publier » :
 
     match /noel/{document=**} {
       allow read, write: if autorise();
+    }
+    // Copie image de la lettre pour la vidéo partagée : lisible par lien, modifiable par vous deux seulement
+    match /partage/{id} {
+      allow read: if true;
+      allow write: if autorise();
     }
